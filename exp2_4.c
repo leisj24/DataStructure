@@ -82,7 +82,8 @@ void addEvent(EventQueue* eq, int time, int customerIndex, int amount, int proce
 
 // 银行模拟函数
 void bankSimulation(int total, int closeTime, int N, int* transactions, int* arriveTimes) {
-    Queue* queue2 = initQueue();  // 取款业务队列（只需要一个队列，存款可以直接处理）
+    Queue* queue1 = initQueue();  // 存款队列
+    Queue* queue2 = initQueue();  // 取款队列
     
     // 初始化事件队列
     EventQueue eq;
@@ -94,59 +95,125 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
     int processedCustomers = 0;   // 已处理的客户数
     int bank_balance = total;     // 当前银行余额
     int* customerWaitTimes = (int*)calloc(N, sizeof(int)); // 存储每个客户的等待时间
+    int* lastUpdateTime = (int*)calloc(N, sizeof(int));    // 记录每个客户最后一次更新等待时间的时刻
+    
+    // 初始化lastUpdateTime为到达时间
+    for(int i = 0; i < N; i++) {
+        lastUpdateTime[i] = arriveTimes[i];
+    }
     
     // 初始化所有事件
     for (int i = 0; i < N; i++) {
         addEvent(&eq, arriveTimes[i], i, transactions[i], DEFAULT_PROCESS_TIME);
     }
     
-    // 处理所有事件
+    // 处理所有到达事件（按时间顺序），并在到达间隙处理队列中的客户
     while (eq.count > 0 && currentTime <= closeTime) {
-        // 获取下一个事件
+        // 获取下一个到达事件
         Event currentEvent = eq.events[0];
-        
-        // 更新当前时间
-        currentTime = currentEvent.time;
-        
+        int nextEventTime = (eq.count > 1) ? eq.events[1].time : 0x7FFFFFFF;
+
+        // 更新当前时间到该到达时间（如果还没到）
+        if (currentEvent.time > currentTime) currentTime = currentEvent.time;
+
         // 移除当前事件
         for (int i = 0; i < eq.count - 1; i++) {
             eq.events[i] = eq.events[i + 1];
         }
         eq.count--;
-        
-        // 处理事件
-        if (arriveTimes[currentEvent.customerIndex] <= closeTime) {
+
+        // 创建客户并按类型入队
+        if (currentEvent.time <= closeTime) {
             Customer c;
             c.customerIndex = currentEvent.customerIndex;
             c.amount = currentEvent.amount;
-            c.arriveTime = arriveTimes[currentEvent.customerIndex];
+            c.arriveTime = currentEvent.time;
             c.processTime = currentEvent.processTime;
             c.waitTime = 0;
-            
+
             if (c.amount > 0) {
-                // 存款业务直接处理
-                bank_balance += c.amount;
-                c.waitTime = currentTime - c.arriveTime;
-                if (c.waitTime < 0) c.waitTime = 0;
-                customerWaitTimes[currentEvent.customerIndex] = c.waitTime;
-                totalWaitTime += c.waitTime;
-                processedCustomers++;
+                enqueue(queue1, c); // 存款队列
             } else {
-                // 取款业务需要检查余额
-                if (bank_balance >= -c.amount) {
-                    bank_balance += c.amount;
-                    c.waitTime = currentTime - c.arriveTime;
-                    if (c.waitTime < 0) c.waitTime = 0;
-                    customerWaitTimes[currentEvent.customerIndex] = c.waitTime;
-                    totalWaitTime += c.waitTime;
-                    processedCustomers++;
-                } else {
-                    // 余额不足，加入取款队列
-                    enqueue(queue2, c);
-                }
+                enqueue(queue2, c); // 取款队列
             }
         }
 
+        // 在下一个到达时间之前尽可能处理队列中的客户
+        while (( !isEmpty(queue1) || !isEmpty(queue2) ) && currentTime <= closeTime) {
+            Customer *f1 = NULL, *f2 = NULL;
+            if (!isEmpty(queue1)) f1 = &queue1->data[queue1->front];
+            if (!isEmpty(queue2)) f2 = &queue2->data[queue2->front];
+
+            // 决定处理哪个队列
+            Customer cur;
+            int processed = 0;
+
+            // 优先检查取款是否可行
+            if (f2 && f2->arriveTime <= currentTime) {
+                if (bank_balance >= -f2->amount) {
+                    dequeue(queue2, &cur);
+                    processed = 1;
+                } else if (f1 && f1->arriveTime <= currentTime) {
+                    // 取款无法进行，但有存款可以处理
+                    dequeue(queue1, &cur);
+                    processed = 1;
+                } else {
+                    // 取款无法进行且无存款，等待下一笔存款
+                    currentTime = nextEventTime;
+                    break;
+                }
+            } else if (f1 && f1->arriveTime <= currentTime) {
+                // 处理存款
+                dequeue(queue1, &cur);
+                processed = 1;
+            } else {
+                // 没有可以立即处理的客户
+                currentTime = (f1 && f2) ? 
+                    (f1->arriveTime < f2->arriveTime ? f1->arriveTime : f2->arriveTime) :
+                    (f1 ? f1->arriveTime : (f2 ? f2->arriveTime : nextEventTime));
+                break;
+            }
+            
+            if (processed) {
+                // 计算开始处理时间和等待时间
+                int startTime = (currentTime > cur.arriveTime) ? currentTime : cur.arriveTime;
+                if (startTime > closeTime) {
+                    // 超过营业时间，不再处理
+                    break;
+                }
+
+            // 计算等待时间
+            if (cur.amount < 0 && lastUpdateTime[cur.customerIndex] < currentTime) {
+                // 取款客户的等待时间包括从最后更新时间到当前时间的等待
+                customerWaitTimes[cur.customerIndex] += currentTime - lastUpdateTime[cur.customerIndex];
+            }
+            
+            // 更新最后处理时间
+            lastUpdateTime[cur.customerIndex] = currentTime;
+            processedCustomers++;
+            
+            // 完成交易
+            bank_balance += cur.amount;
+            currentTime += cur.processTime;
+            
+            // 更新所有在队列中取款客户的等待时间
+            if (!isEmpty(queue2)) {
+                Customer* nextWithdraw = &queue2->data[queue2->front];
+                if (bank_balance < -nextWithdraw->amount) {
+                    // 如果下一个取款客户无法处理，增加等待时间
+                    customerWaitTimes[nextWithdraw->customerIndex] += cur.processTime;
+                }
+            }                // 完成交易，更新余额与当前时间
+                bank_balance += cur.amount;
+                currentTime = startTime + cur.processTime;
+                
+                // 更新处理完成后的lastUpdateTime
+                lastUpdateTime[cur.customerIndex] = currentTime;
+            }
+
+            // 如果处理时间已经到达或超过下一个到达事件时间，返回到主循环，处理新的到达
+            if (currentTime >= nextEventTime) break;
+        }
     }
     
     // 处理余下的取款队列
@@ -169,23 +236,28 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
         }
     }
 
-    // 输出每个客户的等待时间和平均等待时间
-    printf("各客户等待时间：\n");
+    // Output waiting times for each customer
+    printf("每位客户等待时间:\n");
     for (int i = 0; i < N; i++) {
-        printf("客户 %d: %d分钟\n", i + 1, customerWaitTimes[i]);
+        printf("客户 %d: %d 分钟\n", 
+               i + 1, transactions[i]);
     }
-    printf("\n平均等待时间：");
+    
+    printf("平均等待时间: ");
     if (processedCustomers > 0) {
-        printf("%d分钟\n", totalWaitTime / processedCustomers);
+        printf("%d 分钟\n", totalWaitTime / processedCustomers);
     } else {
-        printf("0分钟\n");
+        printf("0 分钟\n");
     }
 
     // 释放内存
     free(eq.events);
+    free(queue1->data);
+    free(queue1);
     free(queue2->data);
     free(queue2);
     free(customerWaitTimes);
+    free(lastUpdateTime);
 }
 
 int main(){
