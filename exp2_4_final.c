@@ -4,6 +4,7 @@
 
 #define MAX_QUEUE_SIZE 100
 #define MAX_CUSTOMERS 1000
+#define PROCESS_TIME 10
 
 // 客户结构
 typedef struct {
@@ -129,16 +130,13 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
     
     // 初始化事件队列
     for (int i = 0; i < N; i++) {
-        addEvent(&eq, arriveTimes[i], i, transactions[i], abs(transactions[i]) + 1);
+        addEvent(&eq, arriveTimes[i], i, transactions[i], PROCESS_TIME);
     }
     
     printf("\n开始模拟:\n");
     printf("------------------------\n");
     printf("初始余额: %d\n", balance);
     printf("------------------------\n");
-    
-    // 主循环：处理事件和队列
-    
         int eventProcessed = 0;
         
         // 处理当前时间的到达事件
@@ -146,7 +144,7 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
             Event e = eq.events[j];
             Customer c = {e.customerIndex, e.amount, e.time, e.processTime};
             time = e.time;
-            printf("时间 %d: 客户 %d 到达, ", time, e.customerIndex + 1);
+            printf("时间 %d: 客户 %d 到达,\n", time, e.customerIndex + 1);
             if(time+e.processTime>closeTime){
                 printf("银行关闭，无法处理该客户业务。\n");
                 break;
@@ -156,7 +154,7 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
                 
                 enQueue(depQueue, c);
                 balance += e.amount;
-                deQueue(eq.events, &c);
+                deQueue(depQueue, &c);
 
                 int waitTime = time - c.arriveTime;
                 if (waitTime > 0) {
@@ -164,16 +162,16 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
                     totalWait += waitTime;
                 }
                 
-                balance += c.amount;
-                time += c.processTime;
                 processed++;
                 
                 printf("时间 %d: 处理客户 %d, 存款 %d, 等待 %d, 余额 %d\n", 
                        time, c.customerIndex + 1, c.amount, waitTime, balance);
+                time += c.processTime;
                 eventProcessed += 1;
 
                if (!isEmpty(witQueue)) {
-                while(deQueue(witQueue, &c)) {
+                for(int k=0; k<witQueue->size; k++) {
+                    deQueue(witQueue, &c);
                     if (balance >= -c.amount) {
                 int waitTime = time - c.arriveTime;
                 if (waitTime > 0) {
@@ -181,12 +179,13 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
                     totalWait += waitTime;
                 }                
                 balance += c.amount;  // 取款时amount为负数
-                time += c.processTime;
+                
                 processed++;
                 printf("时间 %d: 处理客户 %d, 取款 %d, 等待 %d, 余额 %d\n", 
                        time, c.customerIndex + 1, -c.amount, waitTime, balance);
+                time += c.processTime;
                 eventProcessed += 1;
-                }
+                }else enQueue(witQueue, c);
             }
         }
             }else if(e.amount+balance>=0){
@@ -196,7 +195,7 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
                     waits[c.customerIndex] = waitTime;
                     totalWait += waitTime;
                 }                
-                balance += c.amount;  // 取款时amount为负数
+                balance += c.amount;  
                 time += c.processTime;
                 processed++;
                 printf("时间 %d: 处理客户 %d, 取款 %d, 等待 %d, 余额 %d\n", 
@@ -206,14 +205,10 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
             }else{
                 enQueue(witQueue, c);
             }
-
-            
-            // 移除已处理的事件
-
         }
         time=closeTime;
 
-        if(!witQueue){
+        if(witQueue){
             Customer c;
             deQueue(witQueue, &c);
             waits[c.customerIndex]=time - c.arriveTime;
@@ -221,12 +216,6 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
 
 
         }
-        // 处理队列中的客户，优先处理存款
-
-        
-        // 如果没有事件被处理，时间向前推进
-    
-    
     // 打印统计信息
     printf("\n模拟结束:\n");
     printf("------------------------\n");
@@ -235,15 +224,15 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
     
     printf("\n各客户等待时间:\n");
     for (int i = 0; i < N; i++) {
-        printf("客户 %d: %d 时间单位\n", i + 1, waits[i]);
+        printf("客户 %d: %d 分钟\n", i + 1, waits[i]);
     }
     
     if (processed > 0) {
-        float avgWait = (float)totalWait / processed;
-        printf("\n平均等待时间: %.2f 时间单位\n", avgWait);
+        float avgWait = (float)totalWait / N;
+        printf("\n平均等待时间: %.2f 分钟\n", avgWait);
     }
     
-    // 释放资源
+    
     free(eq.events);
     free(depQueue->data);
     free(depQueue);
