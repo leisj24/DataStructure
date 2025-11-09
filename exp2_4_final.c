@@ -143,8 +143,11 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
         for(int j=0; j<eq.count; j++) {
             Event e = eq.events[j];
             Customer c = {e.customerIndex, e.amount, e.time, e.processTime};
-            time = e.time;
-            printf("时间 %d: 客户 %d 到达,\n", time, e.customerIndex + 1);
+            
+            printf("时间 %d: 客户 %d 到达,\n", e.time, e.customerIndex + 1);
+            if(time < e.time){
+                time = e.time;
+            }
             if(time+e.processTime>closeTime){
                 printf("银行关闭，无法处理该客户业务。\n");
                 break;
@@ -207,10 +210,12 @@ void bankSimulation(int total, int closeTime, int N, int* transactions, int* arr
             }
         }
         time=closeTime;
+        
+        Customer c;
 
-        if(witQueue){
-            Customer c;
-            deQueue(witQueue, &c);
+        if(deQueue(witQueue, &c)){
+            
+            
             waits[c.customerIndex]=time - c.arriveTime;
             totalWait+=waits[c.customerIndex];
 
