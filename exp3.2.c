@@ -78,7 +78,6 @@ void HuffmanCoding(HuffmanTree HT, HuffmanCode *HC, int n){
     free(cd);
 }
 
-// ==================== 文件压缩相关函数 ====================
 
 // 统计文件中所有字节的频率
 int GetByteFrequency(FILE *fp, unsigned int freq[256]){
@@ -92,8 +91,7 @@ int GetByteFrequency(FILE *fp, unsigned int freq[256]){
             unique_bytes++;
         }
         freq[byte]++;
-    }
-    
+    }    
     rewind(fp);
     return unique_bytes;
 }
@@ -107,8 +105,7 @@ void BuildByteMap(unsigned int freq[256], unsigned char byteMap[256], int n){
         }
     }
 }
-
-// 将二进制字符串写入文件（打包成字节）
+// 将二进制字符串写入文件（以8位为一组写入）
 void WriteBitStream(FILE *outfp, const char *bitStream){
     int len = strlen(bitStream);
     unsigned char byte = 0;
@@ -123,40 +120,34 @@ void WriteBitStream(FILE *outfp, const char *bitStream){
             byte = 0;
             bitPos = 0;
         }
-    }
+    }    
     
-    // 写入最后的字节（可能不足8位）
     if(bitPos > 0){
         fwrite(&byte, 1, 1, outfp);
     }
 }
 
-// 压缩文件函数
 void CompressFile(const char *inputFile, const char *outputFile){
     FILE *infp = fopen(inputFile, "rb");
     if(!infp){
         printf("错误：无法打开输入文件 %s\n", inputFile);
         return;
-    }
-    
+    }    
     FILE *outfp = fopen(outputFile, "wb");
     if(!outfp){
         printf("错误：无法创建输出文件 %s\n", outputFile);
         fclose(infp);
         return;
-    }
-    
+    }    
     // 第1步：统计字节频率
     unsigned int freq[256];
-    int n = GetByteFrequency(infp, freq);
-    
+    int n = GetByteFrequency(infp, freq);    
     if(n == 0){
         printf("文件为空\n");
         fclose(infp);
         fclose(outfp);
         return;
-    }
-    
+    }    
     printf("不同字节数: %d\n", n);
     
     // 第2步：创建Huffman树
@@ -168,8 +159,7 @@ void CompressFile(const char *inputFile, const char *outputFile){
         if(freq[i] > 0){
             HT[++index].weight = freq[i];
         }
-    }
-    
+    }    
     CreateHuffmanTree(&HT, n);
     
     // 第3步：生成Huffman编码
@@ -241,8 +231,6 @@ void CompressFile(const char *inputFile, const char *outputFile){
     fclose(outfp);
 }
 
-// ==================== 文件解压缩相关函数 ====================
-
 // 从文件读取比特流
 int ReadBitStream(FILE *infp, char *bitStream, int maxLen){
     unsigned char byte;
@@ -263,8 +251,7 @@ void DecompressFile(const char *inputFile, const char *outputFile){
     if(!infp){
         printf("错误：无法打开压缩文件 %s\n", inputFile);
         return;
-    }
-    
+    }    
     FILE *outfp = fopen(outputFile, "wb");
     if(!outfp){
         printf("错误：无法创建输出文件 %s\n", outputFile);
@@ -348,8 +335,8 @@ void DecompressFile(const char *inputFile, const char *outputFile){
 
 int main(){
     int choice;
-    char inputFile[256];
-    char outputFile[256];
+    char inputFile[256]; //输入文件的名称
+    char outputFile[256]; //压缩文件的名称
     
     while(1){
         printf("\n========== Huffman文件压缩程序 ==========\n");
@@ -364,9 +351,8 @@ int main(){
             case 1:
                 printf("输入要压缩的文件名 (同目录): ");
                 fgets(inputFile, sizeof(inputFile), stdin);
-                inputFile[strcspn(inputFile, "\n")] = 0;  // 移除换行符
-                
-                // 自动生成输出文件名
+                inputFile[strcspn(inputFile, "\n")] = 0;  // 移除换行符                
+                // 自动生成后缀.huff的输出文件名
                 snprintf(outputFile, sizeof(outputFile), "%s.huff", inputFile);
                 
                 printf("输入文件: %s\n", inputFile);
@@ -382,11 +368,11 @@ int main(){
                 
                 // 自动生成输出文件名（去掉.huff扩展名）
                 strcpy(outputFile, inputFile);
-                char *dot = strrchr(outputFile, '.');
-                if(dot && strcmp(dot, ".huff") == 0){
+                char *dot = strrchr(outputFile, '.'); //查找到最后一个点
+                if(dot && strcmp(dot, ".huff") == 0){ //如果是.huff结尾，去掉后缀
                     *dot = '\0';
                 } else {
-                    strcat(outputFile, ".extracted");
+                    strcat(outputFile, ".extracted"); //否则添加默认后缀
                 }
                 
                 printf("输入文件: %s\n", inputFile);

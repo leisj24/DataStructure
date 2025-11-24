@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<limits.h>
 #define OK 1
 #define ERROR 0
 #define MAXSIZE 10000
@@ -16,8 +17,7 @@ void CreateHuffmanTree(HuffmanTree *HT,int n){
     if(n <= 1) return;
     int m = 2 * n - 1;
     
-    for(int i = 1; i <= m; i++){
-        
+    for(int i = 1; i <= m; i++){        
         (*HT)[i].parent = 0;
         (*HT)[i].lchild = 0;
         (*HT)[i].rchild = 0;
@@ -55,17 +55,13 @@ Status GetFrequency(char str[], char list[], int freq[], int len){
     
     // 从字符串中移除换行符
     for(i = 0; i < len; i++){
-        if(str[i] == '\n'){
+        if(str[i] == '\n' || str[i] == '\r'){  // 新增对 '\r' 的判断
             str[i] = '\0';
             len = i;
             break;
         }
-    }
-    
-    for(i = 0; i < len; i++){
-        // 跳过空格
-        if(str[i] == ' ') continue;
-        
+    }   
+    for(i = 0; i < len; i++){          
         found = 0;
         for(j = 0; j < list_len; j++){
             if(str[i] == list[j]){
@@ -80,7 +76,6 @@ Status GetFrequency(char str[], char list[], int freq[], int len){
             list_len++;
         }
     }
-    // 输出结果
     printf("\n字符频率统计:\n");
     printf("字符\t频率\n");
     for(k = 0; k < list_len; k++){
@@ -102,12 +97,12 @@ void HuffmanCoding(HuffmanTree HT, HuffmanCode *HC, int n){
             if (HT[f].lchild==c) cd[start]='0';   //结点c是f的左孩子，则生成代码0
             else cd[start]='1';                   //结点c是f的右孩子，则生成代码1
             c=f; f=HT[f].parent;                  //继续向上回溯
-        }                                          //求出第i个字符的编码
-        (*HC)[i]=(char*) malloc((n-start)*sizeof(char));          // 为第i个字符编码分配空间
+        }                                          
+        (*HC)[i]=(char*) malloc((n-start)*sizeof(char));          
         strcpy((*HC)[i], &cd[start]);  //将求得的编码从临时空间cd复制到HC的当前行中
     }
     free(cd);                  //释放临时空间
-} // HuffmanCoding
+} 
 
 void Translation(HuffmanCode HC, char list[], char *str, char *codedStr, int n){
     // 将输入字符串翻译为Huffman编码的比特流
@@ -124,11 +119,11 @@ void Translation(HuffmanCode HC, char list[], char *str, char *codedStr, int n){
     }
     
     printf("\n编码过程:\n");
-    printf("原文: %s", str);
-    printf("\n编码: ");
+    printf("原文: %s\n", str);
+    printf("编码: ");
     
     // 遍历输入字符串，逐个字符进行编码
-    for(i = 0; str[i] !='\0' && str[i] !='\n'; i++){
+    for(i = 0; str[i] !='\0'; i++){
         // 在字符列表中查找当前字符的索引
         index = -1;
         for(j = 0; j < n; j++){
@@ -136,8 +131,7 @@ void Translation(HuffmanCode HC, char list[], char *str, char *codedStr, int n){
                 index = j + 1;  // HC的索引从1开始
                 break;
             }
-        }
-        
+        }    
         // 如果找到了该字符，添加其编码到结果
         if(index != -1 && HC[index] != NULL){
             strcpy(&codedStr[coded_len], HC[index]);
@@ -149,11 +143,10 @@ void Translation(HuffmanCode HC, char list[], char *str, char *codedStr, int n){
     printf("编码长度: %d 比特\n", coded_len);
 }
 
-void Decoding(HuffmanTree HT, char *encodedStr, int n){
-    // 将Huffman编码的比特流解码为原字符串
-    int i, j;
-    int root = 2 * n - 1;  // Huffman树的根节点索引
-    int current = root;     // 当前遍历到的节点
+void Decoding(HuffmanTree HT, char list[], char *encodedStr, int n){  // 将比特流解码为原文
+    int i;
+    int root = 2 * n - 1;  // 根节点索引
+    int current = root;    // 当前节点
     char decodedStr[MAXSIZE];
     int decoded_len = 0;
     
@@ -161,29 +154,24 @@ void Decoding(HuffmanTree HT, char *encodedStr, int n){
     printf("比特流: %s\n", encodedStr);
     printf("解码: ");
     
-    // 遍历比特流
+    
     for(i = 0; encodedStr[i] != '\0'; i++){
-        // 根据比特值选择左子树或右子树
         if(encodedStr[i] == '0'){
-            current = HT[current].lchild;  // 0表示左子树
+            current = HT[current].lchild;  // 0走左子树
         } else if(encodedStr[i] == '1'){
-            current = HT[current].rchild;  // 1表示右子树
+            current = HT[current].rchild;  // 1走右子树
         }
         
-        // 到达叶子节点（叶子节点的parent不为0，但lchild和rchild都为0）
+        // 到达叶子节点（无左右孩子）
         if(HT[current].lchild == 0 && HT[current].rchild == 0){
-            // 这是一个字符，输出它
-            // 由于我们在创建树时没有保存字符信息，这里需要通过其他方式识别
-            // 一个简化的做法是使用节点的索引（1到n对应原字符）
-            if(current >= 1 && current <= n){
-                decodedStr[decoded_len++] = current + 'a' - 1;  // 示例：假设是大写字母
-            }
-            current = root;  // 重新回到根节点
+            
+            decodedStr[decoded_len++] = list[current - 1];
+            current = root;  // 回到根节点，准备解码下一个字符
         }
     }
     decodedStr[decoded_len] = '\0';
     printf("%s\n", decodedStr);
-    printf("\n解码完成！原文长度: %d 字符\n", decoded_len);
+    printf("解码完成！原文长度: %d 字符\n", decoded_len);
 }
 int main(){
     char str[MAXSIZE];
@@ -217,9 +205,12 @@ int main(){
     printf("\n是否解码？（1-是，0-否）\n");
     int j;
     scanf("%d", &j);
-    if(j) Decoding(HT, codedStr, n);
+    if(j) Decoding(HT, list, codedStr, n);  // 传入list用于解码映射
     
-    // 释放资源
+    // 释放空间
+    for(int i = 1; i <= n; i++){
+        if(HC[i] != NULL) free(HC[i]);
+    }
     if(HC) free(HC);
     if(HT) free(HT);
     
