@@ -62,8 +62,7 @@ void Dijkstra(MGraph *G, int start, int end) {
     }
     
     // 输出结果
-    printf("\n===== 最短路径结果 =====\n");
-    
+  
     if (dist[end] == INF) {
         printf("从站点 %d 到站点 %d 没有可达路径\n", start, end);
         return;

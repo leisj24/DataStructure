@@ -104,6 +104,7 @@ int main() {
     int a, b;
     
     // 输入顶点数和边数
+    printf("请输入顶点数和边数: \n");
     scanf("%d %d", &n, &m);
     G.vexNum = n;
     G.arcNum = m;
@@ -116,7 +117,7 @@ int main() {
     }
     
     // 输入边
-    printf("请输入边的两个顶点 (格式: 顶点1 顶点2): ");
+    printf("请输入边的两个顶点 (格式: 顶点1 顶点2): \n");
     for (int k = 0; k < m; k++) {
         
         scanf("%d %d", &a, &b);
@@ -135,6 +136,7 @@ int main() {
     BFSTraverse(&G, s);
     
     // 输出DFS结果
+    printf("DFS遍历结果: ");
     for (int i = 0; i < dfsCount; i++) {
         if (i > 0) printf(" ");
         printf("%d", dfsResult[i]);
@@ -142,6 +144,7 @@ int main() {
     printf("\n");
     
     // 输出BFS结果
+    printf("BFS遍历结果: ");
     for (int i = 0; i < bfsCount; i++) {
         if (i > 0) printf(" ");
         printf("%d", bfsResult[i]);

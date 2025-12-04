@@ -184,7 +184,7 @@ int main() {
     printf("\n===== 通讯网的最小代价生成树 =====\n\n");
     
     // Prim算法
-    printf("--- Prim算法（从顶点1开始）---\n");
+    printf("--- Prim算法---\n");
     Prim(&G, 1);
     
     printf("\n");
