@@ -2,15 +2,12 @@
 #include <stdlib.h>
 
 #define MAX_VERTEX 35
-
-// ==================== 邻接矩阵存储结构 ====================
 typedef struct {
-    int arcs[MAX_VERTEX][MAX_VERTEX]; // 邻接矩阵
-    int vexNum;                        // 顶点数
-    int arcNum;                        // 边数
+    int arcs[MAX_VERTEX][MAX_VERTEX]; 
+    int vexNum;                       
+    int arcNum;                       
 } MGraph;
 
-// ==================== 队列结构（用于BFS）====================
 typedef struct {
     int data[MAX_VERTEX];
     int front, rear;
@@ -32,12 +29,11 @@ int DeQueue(Queue *Q) {
     return Q->data[Q->front++];
 }
 
-// ==================== 全局变量 ====================
-int visited[MAX_VERTEX];  // 访问标记数组
+int visited[MAX_VERTEX];  
 int dfsResult[MAX_VERTEX], dfsCount;  // DFS结果
 int bfsResult[MAX_VERTEX], bfsCount;  // BFS结果
 
-// ==================== 深度优先搜索（递归）====================
+//  深度优先搜索
 void DFS(MGraph *G, int v) {
     // 访问当前顶点
     dfsResult[dfsCount++] = v;
@@ -62,7 +58,7 @@ void DFSTraverse(MGraph *G, int start) {
     DFS(G, start);
 }
 
-// ==================== 广度优先搜索 ====================
+// 广度优先搜索
 void BFS(MGraph *G, int start) {
     Queue Q;
     InitQueue(&Q);
@@ -97,7 +93,6 @@ void BFSTraverse(MGraph *G, int start) {
     BFS(G, start);
 }
 
-// ==================== 主函数 ====================
 int main() {
     MGraph G;
     int n, m, s;

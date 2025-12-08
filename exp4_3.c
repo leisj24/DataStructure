@@ -1,18 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-
 #define MAX_VERTEX 35
 #define INF INT_MAX
 
-// ==================== 邻接矩阵存储结构 ====================
 typedef struct {
-    int arcs[MAX_VERTEX][MAX_VERTEX]; // 邻接矩阵（存储权值/距离）
-    int vexNum;                        // 顶点数（站点数）
-    int arcNum;                        // 边数（线路数）
+    int arcs[MAX_VERTEX][MAX_VERTEX];
+    int vexNum;                        
+    int arcNum;                        
 } MGraph;
 
-// ==================== Dijkstra算法 ====================
+//  Dijkstra算法 
 void Dijkstra(MGraph *G, int start, int end) {
     int dist[MAX_VERTEX];      // 从起点到各顶点的最短距离
     int visited[MAX_VERTEX];   // 是否已确定最短路径
@@ -31,8 +29,7 @@ void Dijkstra(MGraph *G, int start, int end) {
     
     dist[start] = 0;
     visited[start] = 1;
-    path[start] = -1;
-    
+    path[start] = -1;    
     // 迭代n-1次，每次确定一个顶点的最短路径
     for (int i = 1; i < G->vexNum; i++) {
         int minDist = INF;
@@ -87,8 +84,6 @@ void Dijkstra(MGraph *G, int start, int end) {
     }
     printf("\n");
 }
-
-// ==================== 主函数 ====================
 int main() {
     MGraph G;
     int n, m;
@@ -99,8 +94,7 @@ int main() {
     printf("请输入站点数和线路数: ");
     scanf("%d %d", &n, &m);
     G.vexNum = n;
-    G.arcNum = m;
-    
+    G.arcNum = m;    
     // 初始化邻接矩阵
     for (int i = 1; i <= n; i++) {
         for (int j = 1; j <= n; j++) {
@@ -110,8 +104,7 @@ int main() {
                 G.arcs[i][j] = INF;
             }
         }
-    }
-    
+    }    
     // 输入线路（带距离/权值）
     printf("请输入%d条线路（格式: 站点1 站点2 距离）:\n", m);
     for (int k = 0; k < m; k++) {
@@ -119,12 +112,9 @@ int main() {
         G.arcs[u][v] = w;
         G.arcs[v][u] = w;  // 无向图（双向线路）
     }
-    
-    // 输入始发站和终点站
     printf("请输入始发站和终点站: ");
     scanf("%d %d", &start, &end);
-    
-    // Dijkstra算法求最短路径
+
     Dijkstra(&G, start, end);
     
     return 0;

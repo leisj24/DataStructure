@@ -51,7 +51,7 @@ int hash(int key, int p) {
     return key % p;
 }
 
-// ==================== 线性探测法 HT1 操作 ====================
+//  线性探测法 HT1 操作 
 
 HashTable1* initHashTable1(int size) {
     HashTable1 *ht = (HashTable1*)malloc(sizeof(HashTable1));
@@ -148,7 +148,7 @@ void freeHT1(HashTable1 *ht) {
     free(ht);
 }
 
-// ==================== 拉链法 HT2 操作 ====================
+// 拉链法 HT2 操作 
 
 HashTable2* initHashTable2(int size) {
     HashTable2 *ht = (HashTable2*)malloc(sizeof(HashTable2));
@@ -229,7 +229,7 @@ double calcASL_Fail_HT2(HashTable2 *ht) {
     int totalComparisons = 0;
     
     for (int i = 0; i < ht->p; i++) {
-        int len = 0;
+        int len = 1;
         Node *cur = ht->data[i];
         while (cur != NULL) {
             len++;
@@ -237,7 +237,7 @@ double calcASL_Fail_HT2(HashTable2 *ht) {
         }
         totalComparisons += len;
     }
-    return (double)totalComparisons / ht->p +1;
+    return (double)totalComparisons / ht->p ;
 }
 
 void freeHT2(HashTable2 *ht) {
@@ -252,8 +252,6 @@ void freeHT2(HashTable2 *ht) {
     free(ht->data);
     free(ht);
 }
-
-// ==================== 主函数 ====================
 
 int main() {
     int keys[MAX_SIZE];
@@ -277,7 +275,6 @@ int main() {
         insertHT2(ht2, keys[i], &insertSteps2[i]);
     }
     
-    // ==================== 输出拉链法结果 ====================
     printf("# 拉链法\n");
     
     // 地址

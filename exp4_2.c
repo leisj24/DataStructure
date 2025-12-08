@@ -1,30 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-
 #define MAX_VERTEX 35
 #define INF INT_MAX
-
-// ==================== 邻接矩阵存储结构 ====================
 typedef struct {
-    int arcs[MAX_VERTEX][MAX_VERTEX]; // 邻接矩阵（存储权值）
-    int vexNum;                        // 顶点数
-    int arcNum;                        // 边数
+    int arcs[MAX_VERTEX][MAX_VERTEX]; 
+    int vexNum;                        
+    int arcNum;                       
 } MGraph;
 
-// ==================== 边结构（用于Kruskal）====================
 typedef struct {
     int u, v;      // 边的两个顶点
     int weight;    // 边的权值
 } Edge;
 
-// ==================== Prim算法 ====================
+// Prim算法 
 void Prim(MGraph *G, int start) {
     int lowcost[MAX_VERTEX];   // 记录到各顶点的最小代价
     int closest[MAX_VERTEX];   // 记录最小代价边的邻接顶点
     int visited[MAX_VERTEX];   // 记录是否已加入生成树
-    int totalCost = 0;
-    
+    int totalCost = 0;    
     // 初始化
     for (int i = 1; i <= G->vexNum; i++) {
         lowcost[i] = G->arcs[start][i];
@@ -33,8 +28,7 @@ void Prim(MGraph *G, int start) {
     }
     visited[start] = 1;
     
-    printf("Prim算法最小生成树的边:\n");
-    
+    printf("Prim算法最小生成树的边:\n");    
     // 选择n-1条边
     for (int i = 1; i < G->vexNum; i++) {
         int minCost = INF;
@@ -51,13 +45,11 @@ void Prim(MGraph *G, int start) {
         if (k == -1) {
             printf("图不连通，无法生成最小生成树\n");
             return;
-        }
-        
+        }        
         // 输出选中的边
         printf("(%d, %d) 权值: %d\n", closest[k], k, minCost);
         totalCost += minCost;
-        visited[k] = 1;
-        
+        visited[k] = 1;        
         // 更新lowcost和closest
         for (int j = 1; j <= G->vexNum; j++) {
             if (!visited[j] && G->arcs[k][j] < lowcost[j]) {
@@ -65,12 +57,11 @@ void Prim(MGraph *G, int start) {
                 closest[j] = k;
             }
         }
-    }
-    
+    }    
     printf("最小生成树总代价: %d\n", totalCost);
 }
 
-// ==================== 并查集（用于Kruskal）====================
+// 并查集（用于Kruskal）
 int parent[MAX_VERTEX];
 
 void InitUF(int n) {
@@ -78,14 +69,12 @@ void InitUF(int n) {
         parent[i] = i;
     }
 }
-
 int Find(int x) {
     if (parent[x] != x) {
         parent[x] = Find(parent[x]);  // 路径压缩
     }
     return parent[x];
 }
-
 void Union(int x, int y) {
     int px = Find(x);
     int py = Find(y);
@@ -94,12 +83,12 @@ void Union(int x, int y) {
     }
 }
 
-// ==================== 边排序（按权值升序）====================
+// 边排序（按权值升序）
 int cmp(const void *a, const void *b) {
     return ((Edge *)a)->weight - ((Edge *)b)->weight;
 }
 
-// ==================== Kruskal算法 ====================
+// Kruskal算法 
 void Kruskal(MGraph *G) {
     Edge edges[MAX_VERTEX * MAX_VERTEX];
     int edgeCount = 0;
@@ -114,16 +103,14 @@ void Kruskal(MGraph *G) {
                 edgeCount++;
             }
         }
-    }
-    
+    }    
     // 按权值排序
     qsort(edges, edgeCount, sizeof(Edge), cmp);
     
     // 初始化并查集
     InitUF(G->vexNum);
     
-    printf("Kruskal算法最小生成树的边:\n");
-    
+    printf("Kruskal算法最小生成树的边:\n");    
     int totalCost = 0;
     int selectedCount = 0;
     
@@ -131,8 +118,7 @@ void Kruskal(MGraph *G) {
     for (int i = 0; i < edgeCount && selectedCount < G->vexNum - 1; i++) {
         int u = edges[i].u;
         int v = edges[i].v;
-        int w = edges[i].weight;
-        
+        int w = edges[i].weight;        
         // 检查是否形成环
         if (Find(u) != Find(v)) {
             Union(u, v);
@@ -150,18 +136,15 @@ void Kruskal(MGraph *G) {
     printf("最小生成树总代价: %d\n", totalCost);
 }
 
-// ==================== 主函数 ====================
 int main() {
     MGraph G;
     int n, m;
-    int u, v, w;
-    
+    int u, v, w;    
     // 输入顶点数和边数
     printf("请输入顶点数和边数: ");
     scanf("%d %d", &n, &m);
     G.vexNum = n;
-    G.arcNum = m;
-    
+    G.arcNum = m;    
     // 初始化邻接矩阵
     for (int i = 1; i <= n; i++) {
         for (int j = 1; j <= n; j++) {
@@ -171,8 +154,7 @@ int main() {
                 G.arcs[i][j] = INF;
             }
         }
-    }
-    
+    }    
     // 输入边（带权值）
     printf("请输入%d条边（格式: 顶点1 顶点2 权值）:\n", m);
     for (int k = 0; k < m; k++) {
@@ -191,7 +173,6 @@ int main() {
     
     // Kruskal算法
     printf("--- Kruskal算法 ---\n");
-    Kruskal(&G);
-    
+    Kruskal(&G);    
     return 0;
 }
